@@ -23,11 +23,11 @@ class DocumentParser:
     def _parse_pdf(self, file_path:str) -> str:
         """Parses a PDF file"""
         with open(file_path, 'rb') as pdf_file:
-            pdf_reader = PyPDF2.PdfFileReader(pdf_file)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
             text = ''
 
             for page in pdf_reader.pages:
-                text += page.extractText()
+                text += page.extract_text()
 
             return text
 
