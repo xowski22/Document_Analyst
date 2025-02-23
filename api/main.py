@@ -1,5 +1,3 @@
-import chunk
-
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from src.models.summarizer import DocumentSummarizer
