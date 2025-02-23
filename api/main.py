@@ -1,3 +1,5 @@
+import chunk
+
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from src.models.summarizer import DocumentSummarizer
@@ -6,6 +8,8 @@ import tempfile
 import os
 import logging
 from typing import List
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
 logging.basicConfig(
         level=logging.INFO,
@@ -24,6 +28,25 @@ parser = DocumentParser()
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
 SUPPORTED_FORMATS = ['.pdf', '.txt', '.docx']
+MAX_WORKERS = 3
+
+async def process_chunk(chunk: str) -> str:
+    """Process a single chunk of text"""
+    try:
+        return summarizer.summarize(chunk)
+    except Exception as e:
+        logger.error(f"Error processing chunk: {str(e)}")
+        return ""
+
+async def process_chunks(chunks: List[str]) -> List[str]:
+    """Process multiple chunks concurrently"""
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        loop = asyncio.get_event_loop()
+        tasks = [
+            loop.run_in_executor(executor, process_chunk, chunk)
+            for chunk in chunks
+        ]
+        return await asyncio.gather(*tasks)
 
 def validate_file(file: UploadFile) -> None:
     """Validate uploaded file format and size"""
@@ -44,6 +67,7 @@ def validate_file(file: UploadFile) -> None:
     except Exception as e:
         logger.error(f"Error reading file: {str(e)}")
         raise HTTPException(status_code=400, detail="Error reading file")
+
 
 @app.post("/summarize")
 async def summarize_document(file: UploadFile):
@@ -68,21 +92,27 @@ async def summarize_document(file: UploadFile):
                 raise ValueError("No content to summarize")
 
 
-            summaries: List[str] = []
+            # summaries: List[str] = []
+            #
+            # for i, chunk in enumerate(chunks):
+            #     try:
+            #         summary = summarizer.summarize(chunk)
+            #         summaries.append(summary)
+            #         logger.debug(f"Processed chunk {i+1}/{len(chunks)}")
+            #     except Exception as e:
+            #         logger.error(f"Error summarizing chunk {i+1}/{str(e)}")
+            #         continue
+            #
+            # if not summaries:
+            #     raise ValueError("Failed to generate summary")
 
-            for i, chunk in enumerate(chunks):
-                try:
-                    summary = summarizer.summarize(chunk)
-                    summaries.append(summary)
-                    logger.debug(f"Processed chunk {i+1}/{len(chunks)}")
-                except Exception as e:
-                    logger.error(f"Error summarizing chunk {i+1}/{str(e)}")
-                    continue
+            chunk_summaries = await process_chunks(chunks)
 
-            if not summaries:
+            valid_summaries = [s for s in chunk_summaries if s]
+            if not valid_summaries:
                 raise ValueError("Failed to generate summary")
 
-            final_summary = " ".join(summaries)
+            final_summary = " ".join(valid_summaries)
             logger.info(f"Successfully summarized document:  {file.filename}")
 
             return {"summary": final_summary}
