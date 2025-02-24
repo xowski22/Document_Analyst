@@ -1,13 +1,18 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
+
 from src.models.summarizer import DocumentSummarizer
 from src.utils.document_parser import DocumentParser
+from src.models.qa_model import QuestionAnswerer
+
 import tempfile
 import os
 import logging
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from pydantic import BaseModel
+from typing import Optional
 
 logging.basicConfig(
         level=logging.INFO,
@@ -23,6 +28,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 summarizer = DocumentSummarizer()
 parser = DocumentParser()
+qa_model = QuestionAnswerer()
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
 SUPPORTED_FORMATS = ['.pdf', '.txt', '.docx']
@@ -66,7 +72,83 @@ def validate_file(file: UploadFile) -> None:
         logger.error(f"Error reading file: {str(e)}")
         raise HTTPException(status_code=400, detail="Error reading file")
 
+@app.post("/qa/ask")
+async def answer_question(
+        question: str = Form(...),
+        context_file: Optional[UploadFile] = File(None),
+        context_text: Optional[str] = Form(None)
+):
+    """Answer a question based on either uploaded document or provided context."""
 
+    try:
+        if not context_file and not context_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Either context_file or context_text must be provided"
+            )
+        if context_file and context_text:
+            raise HTTPException(
+                status_code=400,
+                detail="Please provide either context_file or context_text, not both"
+            )
+
+        if context_file:
+            try:
+                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    content = await context_file.read()
+                    temp_file.write(content)
+                    temp_path = temp_file.name
+
+                try:
+                    context = parser.read_file(temp_path)
+                    if not context or len(context.strip()) == 0:
+                        raise ValueError("Empty document.")
+
+                    context = parser.clean_text(context)
+
+                finally:
+                    try:
+                        os.unlink(temp_path)
+                    except Exception as e:
+                        logger.error(f"Error deleting temp file: {str(e)}")
+            except Exception as e:
+                logger.error(f"Error processing file: {str(e)}")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Error processing uploaded file"
+                )
+        else:
+            context = context_text
+
+        try:
+            answer = qa_model.answer_question(question, context)
+
+            if not answer or answer == "Unable to find answer.":
+                return JSONResponse(
+                    status_code=200,
+                    content={"answer": "Could not find answer in provided context.",
+                             "confidence": 0.0
+                             }
+                )
+            return {
+                "answer": answer,
+                "context_used": context[:200] + "..." if len(context) > 200 else context,
+            }
+        except Exception as e:
+            logger.error(f"Error during question answering: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Error processing question"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred"
+        )
 @app.post("/summarize")
 async def summarize_document(file: UploadFile):
     try:
