@@ -36,7 +36,7 @@ def validate_file_frontend(uploaded_file):
     if uploaded_file is None:
         return False, "No file uploaded"
 
-    file_ext = os.path.splitext(uploaded_file.name)[1][1:].lower()
+    file_ext = os.path.splitext(uploaded_file.name)[1].lower()
 
     if file_ext not in SUPPORTED_FORMATS:
         return False, f"Unsupported file format {file_ext}. Please choose from {SUPPORTED_FORMATS}"
@@ -52,7 +52,7 @@ def main():
 
     setup_cache()
 
-    uploaded_file = st.file_uploader("Choose a document...", type=[fmt.strip() for fmt in SUPPORTED_FORMATS])
+    uploaded_file = st.file_uploader("Choose a document...", type=["pdf", "txt", "docx"])
 
     if uploaded_file is not None:
 

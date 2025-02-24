@@ -31,7 +31,7 @@ def verify_project_structure():
             raise FileNotFoundError(f"File {file} not found")
 
 def create_cache_dir():
-    "create cache dir if it doesn't exist"
+    """create cache dir if it doesn't exist"""
     cache_dir = Path("cache")
     cache_dir.mkdir(exist_ok=True)
     logger.info("Cache dir verified/created")
@@ -40,7 +40,7 @@ def run_backend():
     """Run the FastAPI backend"""
     try:
         process = subprocess.Popen(
-            ["uvicorn", "main:app", "--host", "localhost", "--port", "8000", "--reload"],
+            ["uvicorn", "api.main:app", "--host", "localhost", "--port", "8000"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
@@ -87,7 +87,7 @@ def main():
             backend_process.terminate()
             raise Exception("Frontend server failed to start.")
 
-        webbrowser.open("http://localhost:8501")
+        # webbrowser.open("http://localhost:8501")
 
         print("Application is running!")
         print("Backend URL: http://localhost:8000")

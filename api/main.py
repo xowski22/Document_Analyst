@@ -1,12 +1,16 @@
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, UploadFile, HTTPException, Form, File
 from fastapi.responses import JSONResponse
+
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.models.summarizer import DocumentSummarizer
 from src.utils.document_parser import DocumentParser
 from src.models.qa_model import QuestionAnswerer
 
 import tempfile
-import os
 import logging
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
@@ -31,7 +35,7 @@ parser = DocumentParser()
 qa_model = QuestionAnswerer()
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
-SUPPORTED_FORMATS = ['.pdf', '.txt', '.docx']
+SUPPORTED_FORMATS = ['pdf', 'txt', 'docx']
 MAX_WORKERS = 3
 
 async def process_chunk(chunk: str) -> str:
