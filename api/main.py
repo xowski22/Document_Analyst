@@ -35,7 +35,7 @@ parser = DocumentParser()
 qa_model = QuestionAnswerer()
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
-SUPPORTED_FORMATS = ['pdf', 'txt', 'docx']
+SUPPORTED_FORMATS = ['.pdf', '.txt', '.docx']
 MAX_WORKERS = 3
 
 async def process_chunk(chunk: str) -> str:
@@ -51,7 +51,7 @@ async def process_chunks(chunks: List[str]) -> List[str]:
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         loop = asyncio.get_event_loop()
         tasks = [
-            loop.run_in_executor(executor, process_chunk, chunk)
+            loop.run_in_executor(executor, summarizer.summarize, chunk)
             for chunk in chunks
         ]
         return await asyncio.gather(*tasks)
@@ -59,10 +59,10 @@ async def process_chunks(chunks: List[str]) -> List[str]:
 def validate_file(file: UploadFile) -> None:
     """Validate uploaded file format and size"""
     file_ext = os.path.splitext(file.filename)[1].lower()
-    if file_ext not in SUPPORTED_FORMATS:
+    if file_ext not in SUPPORTED_FORMATS and file_ext.lstrip('.') not in SUPPORTED_FORMATS:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file format. Supported formats are: {', '.join(SUPPORTED_FORMATS)}"
+            detail=f"Unsupported file format. Supported formats are: {', '.join([f.lstrip('.') for f in SUPPORTED_FORMATS])}"
         )
 
     try:
@@ -72,6 +72,8 @@ def validate_file(file: UploadFile) -> None:
                 status_code=400,
                 detail=f"File too large. Maximum size allowed is {MAX_FILE_SIZE/1024/1024:.1f}MB"
             )
+        file.file.seek(0)
+
     except Exception as e:
         logger.error(f"Error reading file: {str(e)}")
         raise HTTPException(status_code=400, detail="Error reading file")
@@ -165,12 +167,12 @@ async def summarize_document(file: UploadFile):
             temp_file.write(content)
             temp_path = temp_file.name
         try:
-            text = parser.read_text(temp_path)
+            text = parser.read_file(temp_path, original_filename=file.filename)
             if not text or len(text.strip()) == 0:
                 raise ValueError("Empty document")
 
             clean_text = parser.clean_text(text)
-            chunks = summarizer.summarize(clean_text)
+            chunks = summarizer.chunk_text(clean_text)
 
             if not chunks:
                 raise ValueError("No content to summarize")

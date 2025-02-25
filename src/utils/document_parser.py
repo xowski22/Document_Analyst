@@ -2,26 +2,32 @@ from typing import Optional
 import PyPDF2
 import docx
 import re
-
+import os
 
 class DocumentParser:
     def __init__(self):
         self.supported_formats = ['.pdf', '.docx', '.txt']
 
-    def read_file(self, file_path:str) -> Optional[str]:
+    def read_file(self, file_path:str, original_filename: str = None) -> Optional[str]:
         """Reads and extracts text from various document formats"""
 
-        if file_path.endswith('.pdf'):
+        if original_filename:
+            ext = os.path.splitext(original_filename)[1].lower()
+        else:
+            ext = os.path.splitext(file_path)[1].lower()
+
+        if ext == '.pdf':
             return self._parse_pdf(file_path)
-        elif file_path.endswith('.docx'):
+        elif ext == '.docx':
             return self._parse_docx(file_path)
-        elif file_path.endswith('.txt'):
+        elif ext == '.txt':
             return self._parse_txt(file_path)
         else:
             raise ValueError(f'Unsupported file format: {file_path}. Supported formats: {self.supported_formats}')
 
     def _parse_pdf(self, file_path:str) -> str:
         """Parses a PDF file"""
+
         with open(file_path, 'rb') as pdf_file:
             pdf_reader = PyPDF2.PdfReader(pdf_file)
             text = ''
