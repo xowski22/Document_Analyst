@@ -46,12 +46,7 @@ def validate_file_frontend(uploaded_file):
 
     return True, ""
 
-def main():
-
-    st.title("Document Analyzer")
-
-    setup_cache()
-
+def document_summary_section():
     uploaded_file = st.file_uploader("Choose a document...", type=["pdf", "txt", "docx"])
 
     if uploaded_file is not None:
@@ -109,6 +104,98 @@ def main():
                     st.error(f"An unexpected error occurred: {str(e)}")
                 finally:
                     status_text.empty()
+
+def qa_section():
+    """Question Answering section of Streamlit app"""
+    st.subheader("Question Answering")
+
+    input_method = st.radio(
+        "Choose context input method:",
+        ["Upload Document", "Enter Text"]
+    )
+
+    context_file = None
+    context_text = None
+
+    if input_method == "Upload Document":
+        context_file = st.file_uploader(
+            "Upload context document",
+            type=["pdf", "txt", "docx"],
+            key="qa_file_uploader"
+        )
+
+        if context_file:
+            st.success(f"Uploaded: {context_file.name}")
+
+    else:
+        context_text = st.text_area(
+            "Enter context text",
+            height=200,
+            key="qa_context_text",
+            placeholder="Paste or type your text here"
+        )
+
+    question = st.text_input("Enter your question:", placeholder="Ask a question about the document...")
+
+    if st.button("Get Answer"):
+        if not question:
+            st.error("Please enter a question.")
+            return
+
+        if not context_file and not context_text:
+            st.error("Please provide context either through file upload or text input.")
+            return
+
+        try:
+            with st.spinner("Finding answer..."):
+                files = {}
+                data = {
+                    "question": question
+                }
+
+                if context_file:
+                    files["context_file"] = context_file
+                else:
+                    data["context_text"] = context_text
+
+                response = requests.post(
+                    "http://localhost:8000/qa/ask",
+                    data=data,
+                    files=files
+                )
+
+                if response.status_code == 200:
+                    result = response.json()
+
+                    st.success("Answer found!")
+
+                    st.markdown("### Answer")
+                    st.markdown(f"**{result['answer']}**")
+
+                    if "context_used" in result:
+                        with st.expander("View source context"):
+                            st.markdown("*Excerpt from document:*")
+                            st.markdown(f"_{result["context_used"]}_")
+                    else:
+                        error_detail = response.json().get("detail", "Unknown error")
+                        st.error(f"Error getting answer: {error_detail}")
+        except requests.exceptions.ConnectionError:
+            st.error("Could not connect to server. Please make sure backend is running.")
+        except Exception as e:
+            st.error(f"Unexpected error: {str(e)}")
+
+def main():
+
+    st.title("Document Analyzer")
+
+    setup_cache()
+
+    tab1, tab2 = st.tabs(["Document Summary", "Question Answering"])
+
+    with tab1:
+        document_summary_section()
+    with tab2:
+        qa_section()
 
 
 if __name__ == "__main__":

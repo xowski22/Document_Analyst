@@ -106,7 +106,7 @@ async def answer_question(
                     temp_path = temp_file.name
 
                 try:
-                    context = parser.read_file(temp_path)
+                    context = parser.read_file(temp_path, original_filename=context_file.filename)
                     if not context or len(context.strip()) == 0:
                         raise ValueError("Empty document.")
 
