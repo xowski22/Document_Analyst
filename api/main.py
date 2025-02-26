@@ -86,7 +86,20 @@ async def answer_question(
 ):
     """Answer a question based on either uploaded document or provided context."""
 
+    response_data = {
+        "answer": "",
+        "success": False,
+        "context_used": ""
+    }
+
     try:
+
+        if not question:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Question cannot be empty"}
+            )
+
         if not context_file and not context_text:
             raise HTTPException(
                 status_code=400,
@@ -98,12 +111,14 @@ async def answer_question(
                 detail="Please provide either context_file or context_text, not both"
             )
 
+        context = ""
+
         if context_file:
             try:
                 with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    temp_path = temp_file.name
                     content = await context_file.read()
                     temp_file.write(content)
-                    temp_path = temp_file.name
 
                 try:
                     context = parser.read_file(temp_path, original_filename=context_file.filename)
@@ -124,7 +139,13 @@ async def answer_question(
                     detail="Error processing uploaded file"
                 )
         else:
-            context = context_text
+            context = context_text if context_text else ""
+
+        if not context or len(context.strip()) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="No valid context provided."
+            )
 
         try:
             answer = qa_model.answer_question(question, context)
