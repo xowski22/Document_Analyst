@@ -1,3 +1,9 @@
 # Document_Analyst
 
-Need to add something relating to rocm slow startup on backend
+An AI-powered document analysis tool built with PyTorch and Hugging Face Transformers
+
+## Feautures
+
+- Document summarization
+- Question answearing
+- Multiple document format support
