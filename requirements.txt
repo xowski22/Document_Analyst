@@ -1,0 +1,9 @@
+transformers
+torch
+PyPDF2
+python-docx
+fastapi
+uvicorn
+streamlit
+requests
+numpy
