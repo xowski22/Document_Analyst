@@ -115,66 +115,75 @@ async def answer_question(
 
         if context_file:
             try:
-                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(context_file.filename)[1]) as temp_file:
                     temp_path = temp_file.name
                     content = await context_file.read()
                     temp_file.write(content)
 
-                try:
-                    context = parser.read_file(temp_path, original_filename=context_file.filename)
-                    if not context or len(context.strip()) == 0:
-                        raise ValueError("Empty document.")
+                context = parser.read_file(temp_path)
 
-                    context = parser.clean_text(context)
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
 
-                finally:
-                    try:
-                        os.unlink(temp_path)
-                    except Exception as e:
-                        logger.error(f"Error deleting temp file: {str(e)}")
+                # try:
+                #     context = parser.read_file(temp_path, original_filename=context_file.filename)
+                #     if not context or len(context.strip()) == 0:
+                #         raise ValueError("Empty document.")
+                #
+                #     context = parser.clean_text(context)
+
+                # finally:
+                #     try:
+                #         os.unlink(temp_path)
+                #     except Exception as e:
+                #         logger.error(f"Error deleting temp file: {str(e)}")
             except Exception as e:
+                if temp_path and os.path.exists(temp_path):
+                    os.unlink(temp_path)
                 logger.error(f"Error processing file: {str(e)}")
-                raise HTTPException(
+                return JSONResponse(
                     status_code=400,
-                    detail="Error processing uploaded file"
+                    content={"error" : f"Error processing file: {str(e)}"}
                 )
         else:
-            context = context_text if context_text else ""
+            context = context_text
 
         if not context or len(context.strip()) == 0:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=400,
-                detail="No valid context provided."
+                content={"error": "Empty context provided."}
             )
 
-        try:
-            answer = qa_model.answer_question(question, context)
+        context = parser.clean_text(context)
 
-            if not answer or answer == "Unable to find answer.":
-                return JSONResponse(
-                    status_code=200,
-                    content={"answer": "Could not find answer in provided context.",
-                             "confidence": 0.0
-                             }
-                )
-            return {
-                "answer": answer,
-                "context_used": context[:200] + "..." if len(context) > 200 else context,
-            }
-        except Exception as e:
-            logger.error(f"Error during question answering: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail="Error processing question"
-            )
+        answer = qa_model.answer_question(question, context)
 
-    except HTTPException:
-        raise
+        if not answer or answer == "Unable to find answer.":
+            response_data["answer"] = "Could not find an answer or provided context."
+            response_data["success"] = False
+        else:
+            response_data["answer"] = answer
+            response_data["success"] = True
+
+        context_excerpt = context[:200] + "..." if len(context) > 200 else context
+        response_data["context_used"] = context_excerpt
+
+        return JSONResponse(
+            status_code=200,
+            content=response_data
+        )
+
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        raise HTTPException(
+        import traceback
+        traceback_str = traceback.format_exc()
+        print(f"QA endpoint error: {str(e)}\n{traceback_str}")
+        return JSONResponse(
             status_code=500,
-            detail="An unexpected error occurred"
+            content={
+                "error": f"QA endpoint error: {str(e)}",
+                "answer": "Error processing question",
+                "success": False
+            }
         )
 @app.post("/summarize")
 async def summarize_document(file: UploadFile):
