@@ -94,3 +94,68 @@ class DocumentAnalyzer:
 
     def generate_word_cloud(self):
         """Generate word cloud using wordcloud library"""
+        text = ''.join(self.filtered_words)
+        return WordCloud(
+            width=800,
+            height=400,
+            background_color='black',
+            colormap='viridis',
+            max_words=100).generate(text)
+
+def display_document_dashboard(text):
+    """Display document analysis dashboard"""
+
+    analyzer = DocumentAnalyzer(text)
+
+    st.subheader("Document Statistics")
+    stats = analyzer.get_basic_stats()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Document Length", f"{stats['Document Length (words)']} words")
+        st.metric("Number of Sequences", stats['Number of Sequences'])
+        st.metric("Unique Words", stats['Unique Words'])
+
+    with col2:
+        st.metric("Average Sentence Lenght", f"{stats['Average Sentence Lenght']} words")
+        st.metric("Lexical Diversity", f"{stats['Lexical Diversity'] * 100:.1f%} ")
+        readability_score = analyzer.get_readability_score()
+        st.metric("Readability Score", f"{readability_score} (approx. grade level)")
+
+    st.subheader("Keyword Distribution")
+
+    viz_tab1, viz_tab2 = st.tabs(["Word Cloud", "Bar Chart"])
+
+    with viz_tab1:
+        wordcloud = analyzer.generate_word_cloud()
+        fix, ax = plt.subplots(figsize=(10, 5))
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis('off')
+        st.pyplot(fig=ax)
+
+    with viz_tab2:
+        keywords = analyzer.get_keyword_distribution()
+        if keywords:
+            df = pd.DataFrame(keywords, columns=['Word', 'Frequency'])
+            fig, ax = plt.subplots(figsize=(10, 5))
+            sns.barplot(x='Frequency', y='Word', data=df, ax=ax)
+            ax.set_title('Top 15 Keywords')
+            st.pyplot(fig)
+        else:
+            st.info("Not enough data for keyword visualization")
+def test_document_performance():
+    """Test document performance section"""
+
+    st.subheader("Test on Different Document Types")
+
+    document_type = st.selectbox(
+        "Select document to test",
+        ["Technical Report", "Legal Contract", "News Article", "Scientific Paper"]
+    )
+
+    sample_texts = {
+        "Technical Report": """
+        System Performance Analysis Report
+        """
+    }
