@@ -157,5 +157,67 @@ def test_document_performance():
     sample_texts = {
         "Technical Report": """
         System Performance Analysis Report
+
+        The system performance testing was conducted over a 30-day period. Overall performance met expectations in 85% of test cases. Response time averaged 230ms under normal load, increasing to 450ms under peak load. The system processed 1,200 transactions per second, with peaks of up to 1,800 TPS during stress testing. CPU usage averaged 65% during normal operations.
+
+        Database query optimization could potentially reduce response times by an additional 15-20%.
+        """,
+
+        "Legal Contract": """
+        CONSULTING SERVICES AGREEMENT
+
+        This Agreement is entered into as of September 15, 2023 by and between ABC Corporation and XYZ Consulting LLC. Consultant shall provide consulting services as described in Exhibit A. Client shall pay Consultant at the rate of $150 per hour, not to exceed $10,000 per month without prior written authorization. Consultant shall invoice Client monthly, and Client shall pay such invoices within 30 days of receipt.
+        """,
+
+        "News Article": """
+        BREAKTHROUGH IN RENEWABLE ENERGY STORAGE ANNOUNCED
+
+        Scientists at the National Energy Laboratory have developed a new type of battery technology that could revolutionize renewable energy storage. The new system uses abundant materials including aluminum and sulfur, storing electricity at one-sixth the cost of lithium-ion batteries while offering higher capacity. The research team has secured $25 million in funding to develop a commercial prototype, with the technology potentially reaching markets within three to five years.
+        """,
+
+        "Scientific Paper": """
+        Neural Network Approaches to Natural Language Processing: A Comparative Analysis
+
+        Abstract: This paper presents an evaluation of neural network architectures applied to NLP tasks. We compare transformer-based models, RNNs, and CNNs across multiple benchmark datasets. Our findings indicate that transformer-based architectures outperform other approaches on complex language understanding tasks, while recurrent models maintain advantages for certain sequential predictions. We propose a hybrid architecture leveraging the strengths of both approaches.
         """
     }
+
+    st.write(f"**Sample {document_type}:**")
+    st.write(sample_texts[document_type])
+
+    if st.button("Analyze Document"):
+        with st.spinner('Analyzing document...'):
+            display_document_dashboard(sample_texts[document_type])
+
+            st.subheader("Summarization Perfomance")
+            st.info("For a real implementation, this would call summarization endpoint and display the results")
+
+            sample_summaries = {
+                "Technical Report": "System performance testing over 30 days showed good results with 85% of test cases meeting expectations. Response time averaged 230ms under normal load, throughput was 1,200 transactions per second, and resource utilization was moderate. Database optimization could improve performance further.",
+
+                "Legal Contract": "This is a consulting services agreement between ABC Corporation and XYZ Consulting LLC effective September 15, 2023. The consultant will provide services as outlined in Exhibit A and will be compensated at $150 per hour, not exceeding $10,000 per month without prior authorization.",
+
+                "News Article": "Scientists at the National Energy Laboratory have developed a new battery technology using aluminum and sulfur that could revolutionize renewable energy storage. The technology is cheaper than lithium-ion batteries while offering higher capacity and longer life. A commercial prototype may be available in 3-5 years.",
+
+                "Scientific Paper": "This paper compares neural network architectures for natural language processing tasks. Transformer-based models generally outperform recurrent and convolutional networks on complex language tasks. The authors propose a hybrid architecture combining strengths of different approaches and demonstrate its effectiveness on sentiment analysis and machine translation."
+            }
+
+            st.write(sample_summaries[document_type])
+
+def document_analytics_tab():
+    st.subheader("Document Analytics")
+
+    uploaded_file = st.file_uploader("Upload a document for analytics", type=["pdf", "txt", "docx"])
+
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.type != "text/plain":
+                text = uploaded_file.getvalue().decode("utf-8")
+
+                display_document_dashboard(text)
+            else:
+                st.warning("At this time only txt files can be uploaded.")
+        except Exception as e:
+            st.error(f"Error analyzing document: {str(e)}")
+    else:
+        test_document_performance()

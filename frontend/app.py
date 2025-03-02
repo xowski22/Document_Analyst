@@ -4,6 +4,7 @@ import os
 import hashlib
 import json
 from pathlib import Path
+from src.utils.document_analyzer import document_analytics_tab
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
 SUPPORTED_FORMATS = ['.pdf', '.txt', '.docx']
@@ -190,13 +191,14 @@ def main():
 
     setup_cache()
 
-    tab1, tab2 = st.tabs(["Document Summary", "Question Answering"])
+    tab1, tab2, tab3 = st.tabs(["Document Summary", "Question Answering", "Document Analytics"])
 
     with tab1:
         document_summary_section()
     with tab2:
         qa_section()
-
+    with tab3:
+        document_analytics_tab()
 
 if __name__ == "__main__":
     main()
