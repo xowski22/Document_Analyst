@@ -1,9 +1,11 @@
 import streamlit as st
 import requests
 import os
+import sys
 import hashlib
 import json
 from pathlib import Path
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.utils.document_analyzer import document_analytics_tab
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
