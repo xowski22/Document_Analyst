@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import sys
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# from src.utils.document_analyzer import document_analytics_tab
+from src.utils.document_analyzer import document_analytics_tab
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
 SUPPORTED_FORMATS = ['.pdf', '.txt', '.docx']
@@ -199,8 +199,8 @@ def main():
         document_summary_section()
     with tab2:
         qa_section()
-    # with tab3:
-    #     document_analytics_tab()
+    with tab3:
+        document_analytics_tab()
 
 if __name__ == "__main__":
     main()
