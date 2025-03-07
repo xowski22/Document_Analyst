@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
-# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.utils.document_analyzer import document_analytics_tab
 
 MAX_FILE_SIZE = 1024 * 1024 * 10
@@ -186,6 +186,8 @@ def qa_section():
             st.error("Could not connect to server. Please make sure backend is running.")
         except Exception as e:
             st.error(f"Unexpected error: {str(e)}")
+
+
 
 def main():
 
