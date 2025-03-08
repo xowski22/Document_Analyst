@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from wordcloud import WordCloud
 
-# try:
-#     nltk.data.find('tokenizers/punkt')
-# except:
-#     nltk.download('punkt')
-# try:
-#     nltk.find('corpora/stopwords')
-# except:
-#     nltk.download('stopwords')
+try:
+    nltk.data.find('tokenizers/punkt')
+except:
+    nltk.download('punkt')
+try:
+    nltk.find('corpora/stopwords')
+except:
+    nltk.download('stopwords')
 
 class DocumentAnalyzer:
     def __init__(self, text, language='english'):
