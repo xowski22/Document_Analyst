@@ -89,6 +89,52 @@ class ModelBenchmark:
         print(f"Benchmarking qa model on {model_name}")
 
         try:
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForQuestionAnswering.from_pretrained(model_name)
+            model.to(self.device)
+
+            initial_memory = torch.cuda.memory_allocated() if torch.cuda.is_available() else 0
+            results = {}
+
+            for batch_size in batch_sizes:
+                if batch_size > len(questions) or batch_size > len(contexts):
+                    continue
+
+                batch_questions = questions[:batch_size]
+                batch_contexts = contexts[:batch_size]
+                times = []
+
+                inputs = tokenizer(
+                    batch_questions,
+                    batch_contexts,
+                    return_tensors = "pt",
+                    padding = True,
+                    truncation = True,
+                    max_length = 512
+                )
+                inputs = {k: v.to(self.device) for k, v in inputs.items()}
+                _ = model(**inputs)
+
+                for _ in range(num_runs):
+                    start_time = time.time()
+                    inputs = tokenizer(
+                        batch_questions,
+                        batch_contexts,
+                        return_tensors="pt",
+                        padding=True,
+                        truncation=True,
+                        max_length=512
+                    )
+                    inputs = {k: v.to(self.device) for k, v in inputs.items()}
+                    _ = model(**inputs)
+                    end_time = time.time()
+                    times.append(end_time - start_time)
+
+                avg_time = sum(times) / len(times)
+                results[f"batch_size_{batch_size}"] = {
+                    "avg_time_seconds": avg_time,
+                    "throughput": batch_size / avg_time
+                }
 
         except Exception as e:
             print(f"Error benchmarking {model_name}: {str(e)}")
