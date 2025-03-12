@@ -136,5 +136,23 @@ class ModelBenchmark:
                     "throughput": batch_size / avg_time
                 }
 
+            peak_memory = torch.cuda.max_memory_allocated() if torch.cuda.is_available() else 0
+            memory_usage = peak_memory - initial_memory
+
+            model_results = {
+                "model_name": model_name,
+                "device": str(self.device),
+                "memory_usage": memory_usage,
+                "batch_results": results
+            }
+
         except Exception as e:
             print(f"Error benchmarking {model_name}: {str(e)}")
+
+    def save_results(self, filename="benchmark_results.json"):
+        """Save benchmark results to a json file"""
+
+        with open(self.save_dir/filename, "w") as f:
+            json.dump(self.results, f, indent=2)
+        print(f"Results saved to {self.save_dir/filename}")
+
