@@ -146,6 +146,9 @@ class ModelBenchmark:
                 "batch_results": results
             }
 
+            self.results[f"qa_{model_name.replace('/','_')}"] = model_results
+            return model_results
+
         except Exception as e:
             print(f"Error benchmarking {model_name}: {str(e)}")
 
@@ -156,3 +159,19 @@ class ModelBenchmark:
             json.dump(self.results, f, indent=2)
         print(f"Results saved to {self.save_dir/filename}")
 
+    def plot_results(self,model_type="summarization", filename="benchmark_results.json"):
+        """Plot benchmark results"""
+
+        data = []
+
+        for k, res in self.results.items():
+            if k.startswith(model_type) and "error" not in res:
+                model_name = res["model_name"].split("/")[-1]
+
+                for batch_size, batch_res in res["batch_results"].items():
+                    data.append({
+                        "model_name": model_name,
+                        "batch_size": batch_size.split("_")[-1],
+                        "latency": batch_res["avg_time_seconds"],
+                        "throughput": batch_res["throughput"]
+                    })
