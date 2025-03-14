@@ -175,3 +175,13 @@ class ModelBenchmark:
                         "latency": batch_res["avg_time_seconds"],
                         "throughput": batch_res["throughput"]
                     })
+
+        if not data:
+            print("No results found")
+            return
+
+        df = pd.DataFrame(data)
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+
