@@ -184,4 +184,19 @@ class ModelBenchmark:
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
 
+        latency_pivot = df.pivot(index="model", columns="batch_size", values="latency")
+        latency_pivot.plot(kind="bar", ax=ax1)
+        ax1.set_ylabel("Latency (seconds)")
+        ax1.set_title("Model latency by Batch size")
+
+        throughput_pivot = df.pivot(index="model", columns="batch_size", values="throughput")
+        throughput_pivot.plot(kind="bar", ax=ax2)
+        ax2.set_ylabel("Throughput (samples/second)")
+        ax2.set_title("Model throughput by Batch size")
+
+        plt.tight_layout()
+        filepath = self.save_dir/filename
+        plt.savefig(filepath)
+        print(f"Plot saved to {filepath}")
+        plt.close()
 
